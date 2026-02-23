@@ -68,7 +68,6 @@
             <p style="font-size:13px; margin-top:5px;">Supports JPG, PNG, WEBP</p>
         </div>
 
-        <!-- Upload and Camera buttons -->
         <div class="image-buttons">
             <button class="img-btn btn-upload" onclick="document.getElementById('imageInput').click()">
                 📁 Upload Photo
@@ -78,7 +77,6 @@
             </button>
         </div>
 
-        <!-- Hidden inputs -->
         <input type="file" id="imageInput" accept="image/*" style="display:none">
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
 
@@ -130,6 +128,10 @@
     const analyzeBtn = document.getElementById('analyzeBtn');
     let currentText = '';
     let selectedLanguage = 'english';
+    let selectedFile = null;
+
+    // ← THIS IS THE KEY FIX - hardcoded Railway URL
+    const BASE_URL = 'https://enthusiastic-tranquility-production-28ca.up.railway.app';
 
     function setLanguage(lang) {
         selectedLanguage = lang;
@@ -148,6 +150,7 @@
 
     function handleFile(file) {
         if (file) {
+            selectedFile = file;
             const reader = new FileReader();
             reader.onload = e => {
                 preview.src = e.target.result;
@@ -167,20 +170,19 @@
     });
 
     async function analyzeMedicine() {
-        const file = imageInput.files[0] || cameraInput.files[0];
+        if (!selectedFile) return;
         const question = document.getElementById('questionInput').value;
-        if (!file) return;
         stopText();
         document.getElementById('loader').style.display = 'block';
         document.getElementById('resultCard').style.display = 'none';
         analyzeBtn.disabled = true;
         analyzeBtn.textContent = selectedLanguage === 'urdu' ? 'تجزیہ ہو رہا ہے...' : 'Analyzing...';
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', selectedFile);
         formData.append('question', question);
         formData.append('language', selectedLanguage);
         try {
-            const response = await fetch('/analyze/', { method: 'POST', body: formData });
+            const response = await fetch(BASE_URL + '/analyze/', { method: 'POST', body: formData });
             const data = await response.json();
             document.getElementById('loader').style.display = 'none';
             document.getElementById('resultCard').style.display = 'block';
@@ -199,7 +201,7 @@
             }
         } catch (err) {
             document.getElementById('loader').style.display = 'none';
-            document.getElementById('resultContent').innerHTML = '<p style="color:red">Something went wrong. Please try again.</p>';
+            document.getElementById('resultContent').innerHTML = '<p style="color:red">Connection error: ' + err.message + '</p>';
             document.getElementById('resultCard').style.display = 'block';
         }
         analyzeBtn.disabled = false;
@@ -236,8 +238,7 @@
                 utterance.voice = hindiVoice;
                 utterance.lang = 'hi-IN';
             } else {
-                alert('No Urdu voice found. Please install Urdu language pack from Windows Settings > Time & Language > Language & Region > Add Urdu (Pakistan)');
-                return;
+                utterance.lang = 'en-US';
             }
         } else {
             utterance.lang = 'en-US';
