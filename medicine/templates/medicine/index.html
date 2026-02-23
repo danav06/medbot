@@ -17,6 +17,12 @@
         .upload-area:hover { background: #eef3ff; }
         .upload-area .icon { font-size: 3rem; }
         .upload-area p { color: #666; margin-top: 10px; }
+        .image-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .img-btn { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .btn-upload { background: #2c7be5; color: white; }
+        .btn-upload:hover { background: #1a5276; }
+        .btn-camera { background: #28a745; color: white; }
+        .btn-camera:hover { background: #1e7e34; }
         #preview { width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; display: none; margin-top: 15px; }
         .question-box { margin-top: 20px; }
         .question-box input { width: 100%; padding: 14px 18px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; outline: none; }
@@ -57,12 +63,27 @@
 <div class="container">
     <div class="upload-card">
         <div class="upload-area" onclick="document.getElementById('imageInput').click()">
-            <div class="icon">📷</div>
+            <div class="icon">📁</div>
             <p><strong>Click to upload</strong> or drag and drop a medicine image</p>
             <p style="font-size:13px; margin-top:5px;">Supports JPG, PNG, WEBP</p>
         </div>
+
+        <!-- Upload and Camera buttons -->
+        <div class="image-buttons">
+            <button class="img-btn btn-upload" onclick="document.getElementById('imageInput').click()">
+                📁 Upload Photo
+            </button>
+            <button class="img-btn btn-camera" onclick="document.getElementById('cameraInput').click()">
+                📷 Open Camera
+            </button>
+        </div>
+
+        <!-- Hidden inputs -->
         <input type="file" id="imageInput" accept="image/*" style="display:none">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+
         <img id="preview" alt="Medicine Preview">
+
         <div class="question-box">
             <input type="text" id="questionInput" placeholder="Optional: Ask something e.g. Can I take this with food?">
         </div>
@@ -104,6 +125,7 @@
 
 <script>
     const imageInput = document.getElementById('imageInput');
+    const cameraInput = document.getElementById('cameraInput');
     const preview = document.getElementById('preview');
     const analyzeBtn = document.getElementById('analyzeBtn');
     let currentText = '';
@@ -124,8 +146,7 @@
         }
     }
 
-    imageInput.addEventListener('change', function() {
-        const file = this.files[0];
+    function handleFile(file) {
         if (file) {
             const reader = new FileReader();
             reader.onload = e => {
@@ -135,10 +156,18 @@
             };
             reader.readAsDataURL(file);
         }
+    }
+
+    imageInput.addEventListener('change', function() {
+        handleFile(this.files[0]);
+    });
+
+    cameraInput.addEventListener('change', function() {
+        handleFile(this.files[0]);
     });
 
     async function analyzeMedicine() {
-        const file = imageInput.files[0];
+        const file = imageInput.files[0] || cameraInput.files[0];
         const question = document.getElementById('questionInput').value;
         if (!file) return;
         stopText();
@@ -156,7 +185,6 @@
             document.getElementById('loader').style.display = 'none';
             document.getElementById('resultCard').style.display = 'block';
             if (data.success) {
-                // ← THIS IS THE ONLY CHANGE - uses speech_text for speaking
                 currentText = data.speech_text || data.analysis;
                 const contentDiv = document.getElementById('resultContent');
                 if (selectedLanguage === 'urdu') {
